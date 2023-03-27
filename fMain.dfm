@@ -33,7 +33,6 @@ object frmKeywordDispatcher: TfrmKeywordDispatcher
       Width = 8
       Height = 360
       Control = pnlKeywordsList
-      ExplicitLeft = 433
     end
     object pnlKeywordsList: TPanel
       Left = 0
@@ -52,8 +51,8 @@ object frmKeywordDispatcher: TfrmKeywordDispatcher
         Height = 358
         Align = alClient
         TabOrder = 0
-        ExplicitWidth = 431
         object tvKeywordsLists: TcxGridDBTableView
+          OnKeyUp = tvKeywordsListsKeyUp
           OnMouseDown = tvKeywordsListsMouseDown
           OnMouseLeave = tvKeywordsListsMouseLeave
           OnMouseMove = tvKeywordsListsMouseMove
@@ -63,6 +62,7 @@ object frmKeywordDispatcher: TfrmKeywordDispatcher
           OnCustomDrawCell = tvKeywordsListsCustomDrawCell
           OnEditing = tvKeywordsListsEditing
           OnEditKeyUp = tvKeywordsListsEditKeyUp
+          OnFocusedRecordChanged = tvKeywordsListsFocusedRecordChanged
           OnSelectionChanged = tvKeywordsListsSelectionChanged
           DataController.DataSource = dtmMain.dsKeywordsLists
           DataController.Options = [dcoAnsiSort, dcoAssignGroupingValues, dcoAssignMasterDetailKeys, dcoSaveExpanding, dcoImmediatePost]
@@ -151,7 +151,6 @@ object frmKeywordDispatcher: TfrmKeywordDispatcher
         Font.Name = 'Segoe UI'
         Font.Style = []
         ParentFont = False
-        ExplicitLeft = 367
       end
       object btnImport: TcxButton
         Left = 394
@@ -170,7 +169,6 @@ object frmKeywordDispatcher: TfrmKeywordDispatcher
         Font.Name = 'Segoe UI'
         Font.Style = []
         ParentFont = False
-        ExplicitLeft = 400
       end
     end
     object pnlKeywords: TPanel
@@ -180,10 +178,6 @@ object frmKeywordDispatcher: TfrmKeywordDispatcher
       Height = 360
       Align = alClient
       TabOrder = 2
-      ExplicitLeft = 680
-      ExplicitTop = 128
-      ExplicitWidth = 185
-      ExplicitHeight = 41
       object grdKeywords: TcxGrid
         Left = 1
         Top = 1
@@ -191,8 +185,8 @@ object frmKeywordDispatcher: TfrmKeywordDispatcher
         Height = 358
         Align = alClient
         TabOrder = 0
-        ExplicitLeft = 2
-        ExplicitTop = 2
+        ExplicitLeft = -2
+        ExplicitTop = 0
         object tvKeywords: TcxGridDBTableView
           OnMouseDown = tvKeywordsMouseDown
           OnMouseLeave = tvKeywordsMouseLeave
@@ -514,5 +508,11 @@ object frmKeywordDispatcher: TfrmKeywordDispatcher
     Height = 12
     Left = 645
     Top = 106
+  end
+  object sdKeywordsExport: TSaveDialog
+    DefaultExt = 'xlsx'
+    Filter = #1060#1072#1081#1083' Excel|*.xlsx'
+    Left = 477
+    Top = 58
   end
 end

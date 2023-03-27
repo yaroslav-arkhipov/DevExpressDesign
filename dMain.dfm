@@ -5,8 +5,7 @@ object dtmMain: TdtmMain
   PixelsPerInch = 96
   object conMain: TFDConnection
     Params.Strings = (
-      
-        'Database=local.db'
+      'Database=local.db'
       'DriverID=SQLite')
     ConnectedStoredUsage = [auRunTime]
     LoginPrompt = False

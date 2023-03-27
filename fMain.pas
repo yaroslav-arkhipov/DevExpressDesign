@@ -4,7 +4,7 @@ interface
 
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
-  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, cxGraphics, cxLookAndFeels, dMain,
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, cxGraphics, cxLookAndFeels, dMain, cxGridExportLink,
   cxLookAndFeelPainters, Vcl.Menus, Vcl.StdCtrls, cxButtons, Vcl.ExtCtrls, System.UITypes,
   cxControls, cxStyles, cxCustomData, cxFilter, cxData, cxDataStorage, cxEdit,
   cxNavigator, dxDateRanges, dxScrollbarAnnotations, Data.DB, cxDBData, cxTextEdit,
@@ -12,6 +12,9 @@ uses
   cxClasses, cxGridCustomView, cxGrid, System.Actions, Vcl.ActnList, cxCheckBox,
   System.ImageList, Vcl.ImgList, dxColorDialog, Vcl.VirtualImageList,
   Vcl.BaseImageCollection, Vcl.ImageCollection, cxSplitter;
+
+resourcestring
+  rsFileExists_Rename = 'Файл с таким именем уже существует! Перезаписать?';
 
 type
   TfrmKeywordDispatcher = class(TForm)
@@ -50,6 +53,7 @@ type
     lvlKeywords: TcxGridLevel;
     ilCheck: TVirtualImageList;
     actLoadDefault: TAction;
+    sdKeywordsExport: TSaveDialog;
     procedure actCloseExecute(Sender: TObject);
     procedure tvKeywordsListsMouseDown(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
@@ -98,11 +102,19 @@ type
     procedure tvKeywordsDataControllerCompare(
       ADataController: TcxCustomDataController; ARecordIndex1, ARecordIndex2,
       AItemIndex: Integer; const V1, V2: Variant; var Compare: Integer);
+    procedure tvKeywordsListsFocusedRecordChanged(
+      Sender: TcxCustomGridTableView; APrevFocusedRecord,
+      AFocusedRecord: TcxCustomGridRecord;
+      ANewItemRecordFocusingChanged: Boolean);
+    procedure tvKeywordsListsKeyUp(Sender: TObject; var Key: Word;
+      Shift: TShiftState);
   private
     FHotTrackedRecordKeywords: TcxCustomGridRecord;
     FHotTrackedRecordKeywordsList: TcxCustomGridRecord;
     FInserting: Boolean;
+    FReloading: Boolean;
     procedure FillColorImageList;
+    procedure ReloadKeywordsList;
   public
     { Public declarations }
   end;
@@ -146,8 +158,18 @@ begin
 end;
 
 procedure TfrmKeywordDispatcher.actExportExecute(Sender: TObject);
+var
+  LFileName: String;
 begin
-  //
+  if sdKeywordsExport.Execute then
+  begin
+    LFileName := sdKeywordsExport.FileName;
+    LFileName := ChangeFileExt(LFileName, '.xlsx');
+    if FileExists(LFileName) and (MessageDlg(rsFileExists_Rename, mtConfirmation, [mbYes, mbNo], 0) = mrNo) then
+      Exit;
+
+    cxGridExportLink.ExportGridToXLSX(LFileName, grdKeywords);
+  end;
 end;
 
 procedure TfrmKeywordDispatcher.actImportExecute(Sender: TObject);
@@ -196,9 +218,16 @@ end;
 
 procedure TfrmKeywordDispatcher.FormShow(Sender: TObject);
 begin
-  FInserting := False;
+  ReloadKeywordsList;
+end;
+
+procedure TfrmKeywordDispatcher.ReloadKeywordsList;
+begin
+  FReloading := True;
   dtmMain.LoadKeywordsLists;
+  dtmMain.mdKeywords.Close;
   FillColorImageList;
+  FReloading := False;
 end;
 
 {$REGION 'Left Grid'}
@@ -220,9 +249,7 @@ begin
   if ACellViewInfo.Item.Index = tvcDelete.Index then
   begin
     dtmMain.DeleteKeywordsLists;
-    dtmMain.LoadKeywordsLists;
-    dtmMain.mdKeywords.Close;
-    FillColorImageList;
+    ReloadKeywordsList;
   end;
   
   if ACellViewInfo.Item.Index = tvcColor.Index then
@@ -230,8 +257,7 @@ begin
     if cdChangeKeywordColor.Execute then
     begin
       dtmMain.UpdateColor(cdChangeKeywordColor.Color);
-      dtmMain.LoadKeywordsLists;
-      FillColorImageList;
+      ReloadKeywordsList;
     end;
   end;
 end;
@@ -380,15 +406,32 @@ begin
     if TcxGridTableController(tvKeywordsLists.Controller).EditingController.Edit.EditingValue <> null then
     begin
       LValue := TcxGridTableController(tvKeywordsLists.Controller).EditingController.Edit.EditingValue;
-      dtmMain.AddNewKeywordsLists(LValue, GetRandomColor);
+      if LValue.Trim <> '' then
+        dtmMain.AddNewKeywordsLists(LValue, GetRandomColor);
     end;
-    dtmMain.LoadKeywordsLists;
-    FillColorImageList;
-    dtmMain.mdKeywords.Close;
+    ReloadKeywordsList;
     FInserting := False;
   end;
 end;
   
+procedure TfrmKeywordDispatcher.tvKeywordsListsFocusedRecordChanged(
+  Sender: TcxCustomGridTableView; APrevFocusedRecord,
+  AFocusedRecord: TcxCustomGridRecord; ANewItemRecordFocusingChanged: Boolean);
+begin
+  if (APrevFocusedRecord = nil) or (AFocusedRecord = nil) or FReloading then
+    Exit;
+
+  if (AFocusedRecord.RecordIndex = Sender.DataController.RowCount - 1) then
+    ReloadKeywordsList;
+end;
+
+procedure TfrmKeywordDispatcher.tvKeywordsListsKeyUp(Sender: TObject;
+  var Key: Word; Shift: TShiftState);
+begin
+  if Key = VK_DOWN then
+    (TcxCustomGridTableView(Sender).Controller.FocusedRecordIndex := TcxCustomGridTableView(Sender).DataController.RowCount - 1);
+end;
+
 procedure TfrmKeywordDispatcher.tvKeywordsListsMouseDown(Sender: TObject;
   Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
 var
